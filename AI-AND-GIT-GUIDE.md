@@ -22,7 +22,8 @@ fix/US-04-error-inicio
 
 4. Trabajar solamente en esa rama.
 5. Hacer cambios pequeños y guardarlos en commits separados.
-6. Abrir una solicitud de revisión hacia `develop` cuando la tarea esté lista.
+6. Después de cada cambio pequeño y comprobado, hacer commit y push de la rama para dejar una copia respaldada y visible para el equipo.
+7. Abrir una solicitud de revisión hacia `develop` cuando la tarea esté lista.
 
 ## Antes de empezar a programar
 
@@ -81,6 +82,16 @@ feat: agrega endpoint de productos
 docs: explica cómo iniciar el proyecto
 fix: valida precio vacío en formulario
 ```
+
+Después de un cambio comprobado:
+
+```bash
+git add archivo-cambiado
+git commit -m "tipo: describe el cambio"
+git push
+```
+
+No esperen a terminar toda la historia para subir el trabajo. Los commits deben representar avances reales y entendibles; no hace falta crear un commit por cada línea modificada.
 
 ## Antes de abrir una solicitud de revisión
 
