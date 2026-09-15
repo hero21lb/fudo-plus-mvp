@@ -1,0 +1,13 @@
+# FUDO Plus MVP
+
+Sistema web para que un negocio de comida publique su menú y reciba pedidos para delivery o retiro.
+
+## Stack
+
+- API: FastAPI
+- Base de datos: PostgreSQL
+- Frontend: HTML, CSS y JavaScript
+
+## Desarrollo
+
+La guía de instalación y ejecución se completará en US-01 y US-04 del Sprint 0.
