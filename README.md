@@ -29,10 +29,14 @@ Abrir `http://127.0.0.1:8000/`. La aplicación crea la tabla de productos al arr
 
 ## Despliegue en Railway
 
+El proyecto ya está creado en Railway. El menú de demostración está en [fudo-plus-mvp-production.up.railway.app](https://fudo-plus-mvp-production.up.railway.app/).
+
+Para reproducir la configuración:
+
 1. Crear un proyecto con el repositorio GitHub y agregar un servicio PostgreSQL.
-2. En el servicio web, establecer `DATABASE_URL` como referencia a `Postgres.DATABASE_URL` (el nombre debe coincidir con el servicio creado).
-3. Para ver productos de ejemplo en la primera visita, establecer `SEED_DEMO_PRODUCTS=true` en el servicio web.
-4. Generar un dominio público para el servicio web. Railway usa `railway.json` para arrancar FastAPI y verifica `/ready`, que consulta la base.
+2. En el servicio web, establecer `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `PORT=8000` y, para la primera demostración, `SEED_DEMO_PRODUCTS=true`.
+3. Configurar el comando de inicio `uvicorn app.main:app --host 0.0.0.0 --port $PORT` y el healthcheck `/ready` en los ajustes del servicio.
+4. Generar un dominio público apuntando al puerto `8000`. La base de datos no necesita dominio público.
 
 No copiar credenciales al repositorio ni exponer la base al público para que la aplicación funcione. Por ahora el menú es de consulta; la administración de productos y los pedidos corresponden a incrementos posteriores.
 
