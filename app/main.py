@@ -1,12 +1,17 @@
 from contextlib import asynccontextmanager
+import hmac
+import os
 from pathlib import Path
+import secrets
 
 import psycopg
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field, HttpUrl, field_validator
+from starlette.middleware.sessions import SessionMiddleware
 
-from app import db
+from app import auth, db
 
 
 ROOT = Path(__file__).resolve().parent
@@ -19,12 +24,128 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="FUDO Plus", lifespan=lifespan)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET") or secrets.token_urlsafe(48),
+    session_cookie="fudo_admin",
+    max_age=60 * 60 * 8,
+    same_site="lax",
+    https_only=bool(os.getenv("RAILWAY_ENVIRONMENT")),
+)
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
+
+
+class LoginInput(BaseModel):
+    username: str
+    password: str
+
+
+class ProductInput(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    description: str = Field(default="", max_length=1000)
+    image_url: HttpUrl | None = None
+    price_cents: int = Field(ge=0, le=100_000_000)
+    is_published: bool = False
+    is_available: bool = True
+
+    @field_validator("name")
+    @classmethod
+    def nonempty_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("El nombre no puede estar vacío")
+        return value
+
+    @field_validator("image_url")
+    @classmethod
+    def secure_image(cls, value: HttpUrl | None) -> HttpUrl | None:
+        if value is not None and value.scheme != "https":
+            raise ValueError("La foto debe usar HTTPS")
+        return value
+
+
+def require_admin(request: Request) -> Request:
+    if not request.session.get("admin"):
+        raise HTTPException(status_code=401, detail="Iniciá sesión para continuar.")
+    return request
+
+
+def require_csrf(
+    request: Request = Depends(require_admin),
+    x_csrf_token: str | None = Header(default=None),
+) -> Request:
+    expected = request.session.get("csrf", "")
+    if not expected or not x_csrf_token or not hmac.compare_digest(expected, x_csrf_token):
+        raise HTTPException(status_code=403, detail="Sesión inválida. Actualizá la página.")
+    return request
 
 
 @app.get("/", include_in_schema=False)
 def home():
     return FileResponse(ROOT / "static" / "index.html")
+
+
+@app.get("/admin/login", include_in_schema=False)
+def admin_login_page(request: Request):
+    if request.session.get("admin"):
+        return RedirectResponse("/admin", status_code=303)
+    return FileResponse(ROOT / "static" / "login.html", headers={"Cache-Control": "no-store"})
+
+
+@app.get("/admin", include_in_schema=False)
+def admin_page(request: Request):
+    if not request.session.get("admin"):
+        return RedirectResponse("/admin/login", status_code=303)
+    return FileResponse(ROOT / "static" / "admin.html", headers={"Cache-Control": "no-store"})
+
+
+@app.post("/api/admin/login", include_in_schema=False)
+def admin_login(credentials: LoginInput, request: Request):
+    if not auth.admin_is_configured():
+        raise HTTPException(status_code=503, detail="El acceso del negocio aún no está configurado.")
+    if not auth.valid_credentials(credentials.username, credentials.password):
+        raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos.")
+    request.session.clear()
+    request.session.update({"admin": True, "csrf": secrets.token_urlsafe(32)})
+    return {"status": "ok"}
+
+
+@app.get("/api/admin/session", include_in_schema=False)
+def admin_session(request: Request = Depends(require_admin)):
+    return {"csrf_token": request.session["csrf"]}
+
+
+@app.post("/api/admin/logout", include_in_schema=False)
+def admin_logout(request: Request = Depends(require_csrf)):
+    request.session.clear()
+    return {"status": "ok"}
+
+
+@app.get("/api/admin/products", include_in_schema=False)
+def admin_products(_request: Request = Depends(require_admin)):
+    try:
+        return db.list_admin_products()
+    except (psycopg.Error, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="No se pudieron cargar los productos.") from error
+
+
+@app.post("/api/admin/products", status_code=201, include_in_schema=False)
+def admin_create_product(product: ProductInput, _request: Request = Depends(require_csrf)):
+    try:
+        return db.create_product(product.model_dump(mode="json"))
+    except (psycopg.Error, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="No se pudo guardar el producto.") from error
+
+
+@app.put("/api/admin/products/{product_id}", include_in_schema=False)
+def admin_update_product(product_id: int, product: ProductInput, _request: Request = Depends(require_csrf)):
+    try:
+        saved = db.update_product(product_id, product.model_dump(mode="json"))
+    except (psycopg.Error, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="No se pudo guardar el producto.") from error
+    if saved is None:
+        raise HTTPException(status_code=404, detail="El producto no existe.")
+    return saved
 
 
 @app.get("/api/products")

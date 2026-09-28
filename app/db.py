@@ -66,6 +66,40 @@ def list_published_products():
         ).fetchall()
 
 
+def list_admin_products():
+    with connect() as connection:
+        return connection.execute(
+            """SELECT id, name, description, image_url, price_cents,
+            is_published, is_available FROM products ORDER BY id DESC"""
+        ).fetchall()
+
+
+def create_product(data: dict):
+    with connect() as connection:
+        return connection.execute(
+            """INSERT INTO products
+            (name, description, image_url, price_cents, is_published, is_available)
+            VALUES (%(name)s, %(description)s, %(image_url)s, %(price_cents)s,
+                    %(is_published)s, %(is_available)s)
+            RETURNING id, name, description, image_url, price_cents,
+                      is_published, is_available""",
+            data,
+        ).fetchone()
+
+
+def update_product(product_id: int, data: dict):
+    with connect() as connection:
+        return connection.execute(
+            """UPDATE products SET name = %(name)s, description = %(description)s,
+            image_url = %(image_url)s, price_cents = %(price_cents)s,
+            is_published = %(is_published)s, is_available = %(is_available)s
+            WHERE id = %(id)s
+            RETURNING id, name, description, image_url, price_cents,
+                      is_published, is_available""",
+            {**data, "id": product_id},
+        ).fetchone()
+
+
 def database_is_ready():
     with connect() as connection:
         connection.execute("SELECT 1")

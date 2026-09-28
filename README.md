@@ -31,14 +31,16 @@ Abrir `http://127.0.0.1:8000/`. La aplicación crea la tabla de productos al arr
 
 El proyecto ya está creado en Railway. El menú de demostración está en [fudo-plus.nwaresoluciones.com](https://fudo-plus.nwaresoluciones.com/).
 
+El negocio administra sus productos en [fudo-plus.nwaresoluciones.com/admin](https://fudo-plus.nwaresoluciones.com/admin). Desde ahí puede crear y editar productos, publicarlos y marcarlos como disponibles o agotados. La foto se carga mediante una URL HTTPS. El acceso requiere un usuario y una contraseña configurados como variables del servicio web; no guardar contraseñas en el repositorio.
+
 Para reproducir la configuración:
 
 1. Crear un proyecto con el repositorio GitHub y agregar un servicio PostgreSQL.
-2. En el servicio web, establecer `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `PORT=8000` y, para la primera demostración, `SEED_DEMO_PRODUCTS=true`.
+2. En el servicio web, establecer `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `PORT=8000` y, para la primera demostración, `SEED_DEMO_PRODUCTS=true`. Configurar también `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH` y `SESSION_SECRET` según `.env.example`. El hash y el secreto se generan con `python -m app.auth hash-password` y `python -m app.auth session-secret`.
 3. Configurar el comando de inicio `uvicorn app.main:app --host 0.0.0.0 --port $PORT` y el healthcheck `/ready` en los ajustes del servicio.
 4. Agregar `fudo-plus.nwaresoluciones.com` como dominio público apuntando al puerto `8000`. En Cloudflare, cargar los registros CNAME y TXT que indique Railway para verificar el dominio. La base de datos no necesita dominio público.
 
-No copiar credenciales al repositorio ni exponer la base al público para que la aplicación funcione. Por ahora el menú es de consulta; la administración de productos y los pedidos corresponden a incrementos posteriores.
+No copiar credenciales al repositorio ni exponer la base al público para que la aplicación funcione. Por ahora el menú es de consulta; el carrito, los pedidos y la vista de tickets corresponden a incrementos posteriores.
 
 ## Colaboración
 

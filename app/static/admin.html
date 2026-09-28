@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#19372b">
+    <title>Productos | FUDO Plus</title>
+    <link rel="stylesheet" href="/static/admin.css">
+    <script src="/static/admin.js" defer></script>
+  </head>
+  <body class="admin-page">
+    <header class="admin-header">
+      <a class="brand" href="/admin"><span class="brand-mark">F<span>+</span></span> FUDO Plus</a>
+      <nav aria-label="Navegación del negocio">
+        <a href="/" target="_blank" rel="noopener noreferrer">Ver menú público ↗</a>
+        <button id="logout" class="text-button" type="button">Cerrar sesión</button>
+      </nav>
+    </header>
+    <main class="admin-main">
+      <div class="page-intro">
+        <div><p class="eyebrow">Tu negocio</p><h1>Gestioná tu menú.</h1><p class="muted">Creá productos, publicalos y marcá lo que está agotado.</p></div>
+        <button id="new-product" class="primary-button" type="button">+ Nuevo producto</button>
+      </div>
+      <section class="stats" aria-label="Resumen">
+        <div><strong id="total-count">—</strong><span>Productos</span></div>
+        <div><strong id="published-count">—</strong><span>Publicados</span></div>
+        <div><strong id="available-count">—</strong><span>Disponibles</span></div>
+      </section>
+      <p id="status" class="message" role="status" aria-live="polite" hidden></p>
+      <div class="workspace">
+        <section class="product-panel" aria-labelledby="products-title">
+          <div class="panel-heading"><h2 id="products-title">Productos</h2><span id="list-count"></span></div>
+          <div id="product-list" class="product-list"><p class="muted">Cargando productos…</p></div>
+        </section>
+        <section class="editor-panel" aria-labelledby="editor-title">
+          <div class="panel-heading"><div><p class="eyebrow">Editor</p><h2 id="editor-title">Nuevo producto</h2></div><button id="cancel-edit" class="text-button" type="button" hidden>Cancelar</button></div>
+          <form id="product-form">
+            <label for="name">Nombre <span aria-hidden="true">*</span></label>
+            <input id="name" name="name" maxlength="120" required placeholder="Ej.: Empanada de carne">
+            <label for="description">Descripción</label>
+            <textarea id="description" name="description" rows="3" maxlength="1000" placeholder="Contá qué lleva o cómo se prepara"></textarea>
+            <div class="form-row">
+              <div><label for="price">Precio en pesos <span aria-hidden="true">*</span></label><input id="price" name="price" type="number" min="0" max="1000000" step="0.01" required placeholder="8500,00"></div>
+              <div><label for="image-url">Foto (URL HTTPS)</label><input id="image-url" name="image_url" type="url" placeholder="https://…"></div>
+            </div>
+            <label class="switch-row" for="is-published"><span><strong>Publicado</strong><small>Se muestra en el menú público.</small></span><input id="is-published" name="is_published" type="checkbox"></label>
+            <label class="switch-row" for="is-available"><span><strong>Disponible</strong><small>El cliente ve si está agotado.</small></span><input id="is-available" name="is_available" type="checkbox" checked></label>
+            <button id="save-product" class="primary-button" type="submit">Guardar producto</button>
+          </form>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
