@@ -46,6 +46,17 @@ def valid_credentials(username: str, password: str) -> bool:
     return hmac.compare_digest(username, configured_name) and verify_password(password, configured_hash)
 
 
+def google_oauth_is_configured() -> bool:
+    return all(
+        os.getenv(name)
+        for name in ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI", "ADMIN_GOOGLE_EMAIL")
+    )
+
+
+def google_admin_email() -> str:
+    return os.getenv("ADMIN_GOOGLE_EMAIL", "").strip().casefold()
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in ("hash-password", "session-secret"):
         raise SystemExit("Uso: python -m app.auth [hash-password|session-secret]")

@@ -8,6 +8,7 @@ import psycopg
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from authlib.integrations.starlette_client import OAuth, OAuthError
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -33,6 +34,15 @@ app.add_middleware(
     https_only=bool(os.getenv("RAILWAY_ENVIRONMENT")),
 )
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
+
+oauth = OAuth()
+oauth.register(
+    name="google",
+    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    client_id=os.getenv("GOOGLE_CLIENT_ID"),
+    client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+    client_kwargs={"scope": "openid email profile"},
+)
 
 
 class LoginInput(BaseModel):
@@ -90,6 +100,41 @@ def admin_login_page(request: Request):
     if request.session.get("admin"):
         return RedirectResponse("/admin", status_code=303)
     return FileResponse(ROOT / "static" / "login.html", headers={"Cache-Control": "no-store"})
+
+
+@app.get("/auth/google", include_in_schema=False)
+async def google_login(request: Request):
+    if not auth.google_oauth_is_configured():
+        raise HTTPException(status_code=503, detail="El acceso con Google aún no está configurado.")
+    google = oauth.create_client("google")
+    return await google.authorize_redirect(request, os.environ["GOOGLE_REDIRECT_URI"])
+
+
+@app.get("/auth/google/callback", include_in_schema=False)
+async def google_callback(request: Request):
+    if not auth.google_oauth_is_configured():
+        raise HTTPException(status_code=503, detail="El acceso con Google aún no está configurado.")
+    google = oauth.create_client("google")
+    try:
+        token = await google.authorize_access_token(request)
+    except OAuthError as error:
+        if error.error == "access_denied":
+            return RedirectResponse("/admin/login?error=cancelled", status_code=303)
+        raise HTTPException(status_code=401, detail="No se pudo validar el acceso con Google.") from error
+
+    user = token.get("userinfo") or {}
+    email = str(user.get("email", "")).strip().casefold()
+    if (
+        not user.get("email_verified")
+        or not email
+        or not hmac.compare_digest(email, auth.google_admin_email())
+    ):
+        request.session.clear()
+        return RedirectResponse("/admin/login?error=unauthorized", status_code=303)
+
+    request.session.clear()
+    request.session.update({"admin": True, "admin_email": email, "csrf": secrets.token_urlsafe(32)})
+    return RedirectResponse("/admin", status_code=303)
 
 
 @app.get("/admin", include_in_schema=False)
