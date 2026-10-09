@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#162922">
+    <title>Menú | FUDO Plus</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/menu.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="FUDO Plus, inicio"><span class="brand-mark">F<span>+</span></span> FUDO Plus</a>
+      <span class="header-note">Menú de demostración</span>
+    </header>
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-inner">
+          <p class="eyebrow">Rico, simple y cerca</p>
+          <h1 id="hero-title">Elegí algo<br><em>que te guste.</em></h1>
+          <p class="hero-copy">Conocé nuestro menú. Muy pronto vas a poder hacer tu pedido desde acá.</p>
+        </div>
+        <div class="hero-decoration" aria-hidden="true"><span>✳</span><span>✳</span><span>✳</span></div>
+      </section>
+      <section class="menu-section" aria-labelledby="menu-title">
+        <div class="section-heading">
+          <div><p class="eyebrow dark">PARA HOY</p><h2 id="menu-title">Nuestro menú</h2></div>
+          <p>Preparado para vos</p>
+        </div>
+        <div id="status" class="status" role="status" aria-live="polite">Cargando menú…</div>
+        <div id="products" class="products" hidden></div>
+      </section>
+    </main>
+    <footer>FUDO Plus · Menú de demostración</footer>
+  </body>
+</html>
