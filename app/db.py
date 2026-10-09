@@ -1,5 +1,6 @@
 import os
 import time
+from pathlib import Path
 
 import psycopg
 from dotenv import load_dotenv
@@ -40,6 +41,7 @@ def initialize_database():
         try:
             with connect() as connection:
                 connection.execute(SCHEMA)
+                connection.execute(Path(__file__).with_name("orders.sql").read_text(encoding="utf-8"))
                 if os.getenv("SEED_DEMO_PRODUCTS", "false").lower() == "true":
                     count = connection.execute("SELECT count(*) AS total FROM products").fetchone()["total"]
                     if count == 0:
@@ -103,3 +105,51 @@ def update_product(product_id: int, data: dict):
 def database_is_ready():
     with connect() as connection:
         connection.execute("SELECT 1")
+
+
+def create_order(data: dict):
+    # The connection context commits everything together or rolls it all back.
+    with connect() as connection:
+        ids = [item["product_id"] for item in data["items"]]
+        products = connection.execute(
+            "SELECT id, name, price_cents FROM products WHERE id = ANY(%s) "
+            "AND is_published AND is_available ORDER BY id FOR SHARE", (ids,),
+        ).fetchall()
+        by_id = {product["id"]: product for product in products}
+        if len(by_id) != len(ids):
+            raise ValueError("Un producto ya no está disponible. Actualizá el menú y revisá tu pedido.")
+        total = sum(by_id[item["product_id"]]["price_cents"] * item["quantity"] for item in data["items"])
+        # Guests use the order snapshot; no account or customer identity is inferred from a phone.
+        order = connection.execute(
+            """INSERT INTO orders (customer_name, customer_phone, fulfillment_method,
+            delivery_address, delivery_reference, total_cents, payment_method, payment_status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, status, total_cents, payment_method, payment_status, created_at""",
+            (data["customer_name"], data["customer_phone"], data["fulfillment_method"],
+             data["delivery_address"], data["delivery_reference"], total,
+             data["payment_method"], "simulated" if data["payment_method"] == "simulated" else "pending"),
+        ).fetchone()
+        with connection.cursor() as cursor:
+            cursor.executemany(
+                """INSERT INTO order_items (order_id, product_id, product_name, quantity, unit_price_cents)
+                VALUES (%s, %s, %s, %s, %s)""",
+                [(order["id"], item["product_id"], by_id[item["product_id"]]["name"],
+                  item["quantity"], by_id[item["product_id"]]["price_cents"]) for item in data["items"]],
+            )
+        return order
+
+
+def list_orders():
+    with connect() as connection:
+        orders = connection.execute("SELECT * FROM orders ORDER BY created_at DESC, id DESC LIMIT 100").fetchall()
+        if orders:
+            items = connection.execute(
+                "SELECT * FROM order_items WHERE order_id = ANY(%s) ORDER BY id",
+                ([order["id"] for order in orders],),
+            ).fetchall()
+            grouped = {}
+            for item in items:
+                grouped.setdefault(item["order_id"], []).append(item)
+            for order in orders:
+                order["items"] = grouped.get(order["id"], [])
+        return orders

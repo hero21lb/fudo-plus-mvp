@@ -61,3 +61,13 @@ Antes de crear ramas o pedir ayuda a una IA, leer [AI-AND-GIT-GUIDE.md](AI-AND-G
 ## Producto y alcance
 
 La definición corregida del proyecto está en [ALCANCE-DEL-PROYECTO.md](ALCANCE-DEL-PROYECTO.md).
+
+## Pedidos de invitados
+
+El menú público permite agregar productos, cambiar cantidades y enviar un pedido sin crear una cuenta. El cliente completa nombre y teléfono, elige retiro o delivery (con dirección obligatoria), y selecciona efectivo o pago simulado, claramente identificado y sin cobro real. El pago online todavía no está implementado.
+
+`POST /api/orders` recibe `customer_name`, `customer_phone`, `fulfillment_method`, `delivery_address`, `delivery_reference`, `payment_method` e `items` con `product_id` y `quantity`. El servidor valida disponibilidad y publicación, toma nombres y precios desde `products` y guarda el pedido y sus ítems en una sola transacción. No acepta totales, precios ni estados de pago del navegador. Para invitados, `customer_id` queda nulo y los datos de contacto se conservan en el pedido; no se crean cuentas ni se deduce una identidad a partir del teléfono.
+
+El arranque aplica `app/orders.sql` después de crear `products`, dentro de la transacción de inicialización. Es la migración aditiva de `customers`, `orders` y `order_items`; conserva los productos existentes. Si el esquema ya se aplicó, las tablas e índices existentes se mantienen. `CREATE TABLE IF NOT EXISTS` no corrige tablas preexistentes con una estructura diferente.
+
+El panel `/admin` muestra los últimos 100 tickets, con productos, cantidades, total, contacto, modalidad, dirección y estado del pago. El botón **Actualizar pedidos** consulta los nuevos tickets; requiere la sesión de administrador. En esta entrega el estado inicial es `pending` y la vista de tickets es de consulta.

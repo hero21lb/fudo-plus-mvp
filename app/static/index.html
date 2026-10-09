@@ -18,7 +18,7 @@
         <div class="hero-inner">
           <p class="eyebrow">Rico, simple y cerca</p>
           <h1 id="hero-title">Elegí algo<br><em>que te guste.</em></h1>
-          <p class="hero-copy">Conocé nuestro menú. Muy pronto vas a poder hacer tu pedido desde acá.</p>
+          <p class="hero-copy">Armá tu pedido y elegí delivery o retiro en el local. Sin crear una cuenta.</p>
         </div>
         <div class="hero-decoration" aria-hidden="true"><span>✳</span><span>✳</span><span>✳</span></div>
       </section>
@@ -29,6 +29,24 @@
         </div>
         <div id="status" class="status" role="status" aria-live="polite">Cargando menú…</div>
         <div id="products" class="products" hidden></div>
+      </section>
+      <section class="menu-section checkout" aria-labelledby="cart-title">
+        <h2 id="cart-title">Tu pedido</h2>
+        <div id="cart-items" aria-live="polite">Todavía no agregaste productos.</div>
+        <p>Total estimado: <strong id="cart-total">$0</strong></p>
+        <form id="checkout-form">
+          <label>Nombre<input name="customer_name" autocomplete="name" maxlength="120" required></label>
+          <label>Teléfono<input name="customer_phone" type="tel" autocomplete="tel" maxlength="40" required></label>
+          <label>Modalidad<select name="fulfillment_method"><option value="pickup">Retiro en el local</option><option value="delivery">Delivery</option></select></label>
+          <div id="delivery-fields" hidden>
+            <label>Dirección de entrega<input name="delivery_address" autocomplete="street-address" maxlength="500" disabled></label>
+            <label>Referencia (opcional)<textarea name="delivery_reference" maxlength="500" disabled></textarea></label>
+          </div>
+          <label>Pago<select name="payment_method"><option value="cash">Efectivo al recibir</option><option value="simulated">Pago simulado (demostración, sin cobro)</option></select></label>
+          <p>El total final se calcula al enviar con los precios vigentes. La simulación no realiza un cobro.</p>
+          <button id="submit-order" type="submit" disabled>Enviar pedido</button>
+        </form>
+        <p id="order-result" role="status" aria-live="polite"></p>
       </section>
     </main>
     <footer>FUDO Plus · Menú de demostración</footer>

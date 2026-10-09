@@ -179,7 +179,46 @@ document.querySelector("#logout").addEventListener("click", async () => {
     const session = await api("/api/admin/session");
     csrfToken = session.csrf_token;
     await loadProducts();
+    await loadOrders();
   } catch (error) {
     notify(error.message, true);
   }
 })();
+
+const orderLabels = { pending: "Pendiente", confirmed: "Confirmado", preparing: "En preparación", ready: "Listo", completed: "Completado", cancelled: "Cancelado", approved: "Aprobado", rejected: "Rechazado", simulated: "Simulado (sin cobro)", cash: "Efectivo", online: "Online" };
+async function loadOrders() {
+  const container = document.querySelector("#order-list");
+  const refresh = document.querySelector("#refresh-orders");
+  refresh.disabled = true;
+  try {
+    const orders = await api("/api/admin/orders");
+    const cards = orders.map((order) => {
+      const card = document.createElement("article");
+      card.className = "order-ticket";
+      const title = document.createElement("h3");
+      title.textContent = `Pedido #${order.id} · ${orderLabels[order.status] || order.status}`;
+      card.append(title);
+      const lines = [
+        new Date(order.created_at).toLocaleString("es-AR"),
+        `${order.customer_name} · ${order.customer_phone}`,
+        order.fulfillment_method === "delivery" ? `Delivery: ${order.delivery_address}` : "Retiro en el local",
+        ...(order.delivery_reference ? [`Referencia: ${order.delivery_reference}`] : []),
+        ...order.items.map((item) => `${item.quantity} × ${item.product_name} · ${money.format(item.line_total_cents / 100)}`),
+        `Total: ${money.format(order.total_cents / 100)}`,
+        `Pago: ${orderLabels[order.payment_method]} · ${orderLabels[order.payment_status]}`,
+      ];
+      for (const text of lines) {
+        const line = document.createElement("p");
+        line.textContent = text;
+        card.append(line);
+      }
+      return card;
+    });
+    container.replaceChildren(...(cards.length ? cards : [document.createTextNode("Todavía no hay pedidos.")]));
+  } catch (error) {
+    container.textContent = error.message;
+  } finally {
+    refresh.disabled = false;
+  }
+}
+document.querySelector("#refresh-orders").addEventListener("click", loadOrders);

@@ -3,13 +3,14 @@ import hmac
 import os
 from pathlib import Path
 import secrets
+from typing import Literal
 
 import psycopg
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from authlib.integrations.starlette_client import OAuth, OAuthError
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 from starlette.middleware.sessions import SessionMiddleware
 
 from app import auth, db
@@ -48,6 +49,44 @@ oauth.register(
 class LoginInput(BaseModel):
     username: str
     password: str
+
+
+class OrderItemInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    product_id: int = Field(gt=0)
+    quantity: int = Field(gt=0, le=100)
+
+
+class OrderInput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    customer_name: str = Field(min_length=1, max_length=120)
+    customer_phone: str = Field(min_length=1, max_length=40)
+    fulfillment_method: Literal["pickup", "delivery"]
+    delivery_address: str | None = Field(default=None, max_length=500)
+    delivery_reference: str | None = Field(default=None, max_length=500)
+    payment_method: Literal["cash", "simulated"] = "cash"
+    items: list[OrderItemInput] = Field(min_length=1, max_length=100)
+
+    @model_validator(mode="after")
+    def validate_order(self):
+        if self.fulfillment_method == "delivery" and not self.delivery_address:
+            raise ValueError("Ingresá la dirección de entrega")
+        ids = [item.product_id for item in self.items]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Agrupá las cantidades de cada producto")
+        if self.fulfillment_method == "pickup":
+            self.delivery_address = self.delivery_reference = None
+        return self
+
+
+@app.post("/api/orders", status_code=201)
+def create_order(order: OrderInput):
+    try:
+        return db.create_order(order.model_dump())
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except (psycopg.Error, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="No se pudo guardar el pedido. Intentá más tarde.") from error
 
 
 class ProductInput(BaseModel):
@@ -172,6 +211,14 @@ def admin_products(_request: Request = Depends(require_admin)):
         return db.list_admin_products()
     except (psycopg.Error, RuntimeError) as error:
         raise HTTPException(status_code=503, detail="No se pudieron cargar los productos.") from error
+
+
+@app.get("/api/admin/orders", include_in_schema=False)
+def admin_orders(_request: Request = Depends(require_admin)):
+    try:
+        return db.list_orders()
+    except (psycopg.Error, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="No se pudieron cargar los pedidos.") from error
 
 
 @app.post("/api/admin/products", status_code=201, include_in_schema=False)
