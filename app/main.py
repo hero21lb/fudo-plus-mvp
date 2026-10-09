@@ -127,7 +127,7 @@ async def google_callback(request: Request):
     if (
         not user.get("email_verified")
         or not email
-        or not hmac.compare_digest(email, auth.google_admin_email())
+        or not any(hmac.compare_digest(email, allowed) for allowed in auth.google_admin_emails())
     ):
         request.session.clear()
         return RedirectResponse("/admin/login?error=unauthorized", status_code=303)

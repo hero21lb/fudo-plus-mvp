@@ -47,14 +47,13 @@ def valid_credentials(username: str, password: str) -> bool:
 
 
 def google_oauth_is_configured() -> bool:
-    return all(
-        os.getenv(name)
-        for name in ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI", "ADMIN_GOOGLE_EMAIL")
-    )
+    required = ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI")
+    return all(os.getenv(name) for name in required) and bool(google_admin_emails())
 
 
-def google_admin_email() -> str:
-    return os.getenv("ADMIN_GOOGLE_EMAIL", "").strip().casefold()
+def google_admin_emails() -> set[str]:
+    configured = os.getenv("ADMIN_GOOGLE_EMAILS") or os.getenv("ADMIN_GOOGLE_EMAIL", "")
+    return {email.strip().casefold() for email in configured.split(",") if email.strip()}
 
 
 if __name__ == "__main__":

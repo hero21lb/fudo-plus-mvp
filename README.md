@@ -35,11 +35,11 @@ El negocio administra sus productos en [fudo-plus.nwaresoluciones.com/admin](htt
 
 ### Ingreso con Google
 
-El panel también admite OAuth de Google. Solo puede ingresar la cuenta cuyo correo esté configurado en `ADMIN_GOOGLE_EMAIL`; Google debe informar que ese correo está verificado. El identificador de cliente y el secreto OAuth son variables privadas del servicio, nunca se guardan en Git.
+El panel también admite OAuth de Google. Solo pueden ingresar las cuentas cuyos correos estén configurados en `ADMIN_GOOGLE_EMAILS`; Google debe informar que cada correo está verificado. Los correos se separan con comas. El identificador de cliente y el secreto OAuth son variables privadas del servicio, nunca se guardan en Git.
 
 1. En Google Cloud Console, elegí o creá un proyecto y configurá la pantalla de consentimiento OAuth. Para una prueba interna, agregá las cuentas de prueba que correspondan; para uso externo puede ser necesario completar la publicación y verificación que solicite Google.
 2. En **Clientes**, creá un cliente OAuth de tipo **Aplicación web**. Como origen autorizado agregá `https://fudo-plus.nwaresoluciones.com`. Como URI de redirección autorizada agregá exactamente `https://fudo-plus.nwaresoluciones.com/auth/google/callback`.
-3. Copiá el ID y el secreto del cliente a las variables del servicio web en Railway: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=https://fudo-plus.nwaresoluciones.com/auth/google/callback` y `ADMIN_GOOGLE_EMAIL=correo-del-administrador@gmail.com`. Conservá `SESSION_SECRET` estable y privado.
+3. Copiá el ID y el secreto del cliente a las variables del servicio web en Railway: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=https://fudo-plus.nwaresoluciones.com/auth/google/callback` y `ADMIN_GOOGLE_EMAILS=admin@gmail.com,otra-cuenta@gmail.com`. Conservá `SESSION_SECRET` estable y privado.
 4. Para desarrollo local, agregá `http://127.0.0.1:8000` como origen autorizado y `http://127.0.0.1:8000/auth/google/callback` como URI de redirección autorizada. En el `.env` local usá ese mismo callback y la cuenta autorizada. No subas el archivo `.env`.
 5. Reiniciá o desplegá el servicio y probá `/admin/login`. El botón **Continuar con Google** debe abrir Google; al volver, el correo autorizado entra al panel y cualquier otra cuenta queda fuera.
 
