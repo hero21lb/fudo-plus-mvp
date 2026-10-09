@@ -1,0 +1,5 @@
+.google-button{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;margin-top:24px;padding:13px 18px;border:1px solid #cbd5c9;border-radius:12px;background:#fff;color:#21352d;text-decoration:none;font-weight:700}
+.google-button:hover{background:#f1f4ef}
+.google-button span{font-size:1.2rem;font-weight:800;color:#4285f4}
+.login-divider{display:flex;align-items:center;gap:12px;margin:22px 0;color:#718078;font-size:.78rem}
+.login-divider:before,.login-divider:after{content:"";height:1px;flex:1;background:#dfe5dc}
